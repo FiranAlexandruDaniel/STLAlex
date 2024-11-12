@@ -11,7 +11,11 @@ struct Problema {
     string idProblema;
     string specializare;
     int timp;
-
+    // Am nevoie de operator-ul == pentru functia erase,
+    // altfel nu ar putea gasi pacientul
+    //bool operator==(const Problema& other) const {
+    //    return idProblema == other.idProblema && specializare == other.specializare && timp == other.timp;
+    // }
 };
 struct Doctor
 {
@@ -19,8 +23,7 @@ struct Doctor
     string specializare;
     bool disponibilitate = true;
     int ora_disponibil = 9;
-    int probleme_rezolvate = 0;
-    vector <Problema> doctor_probleme;
+    vector <Problema> probleme_doctor;
 };
 int main()
 {
@@ -34,17 +37,16 @@ int main()
     vector <Doctor> doctori;
     inFile >> no_problems;
 
-    for (int i = 0; i < no_problems; i++)
+    for (int i = 0; i <= no_problems; i++)
     {
         inFile >> name;
         inFile >> speciality;
         inFile >> timp;
-        cout << name << ' ' << speciality << '\n';
+        cout << name << ' ' << speciality << " " << timp << '\n';
         probleme.emplace_back(name, speciality,timp);
     }
-
+    cout << endl;
     inFile >> no_doctors;
-
     for (int i = 0; i < no_doctors; i++)
     {
         inFile >> name;
@@ -52,50 +54,15 @@ int main()
         cout << name << ' ' << speciality << '\n';
         doctori.emplace_back(name, speciality);
     }
-    /*
-    for (auto problema : probleme)
-    {
-        bool accepted = false;
-        for (auto doctor : doctori)
-        {
-            if (problema.specializare == doctor.specializare && doctor.disponibilitate == true)
-            {
-                doctor.disponibilitate = false;
-                accepted = true;
-                break;
-            }
-        }
-        if (accepted)
-        {
-            cout << problema.idProblema << "-Acceptat" << endl;
+    cout << endl;
+    // rezolvare problema bonus
 
-        }
-        else
-        {
-            cout << problema.idProblema << "-Respins" << endl;
-
-        }
-    }*/
-
-  /*  for (auto& doctor : doctori)
-    {
-        auto it = find_if(begin(probleme), end(probleme), [&](Problema n) {
-            if (doctor.specializare == n.specializare)
-            {return true;}
-            else
-            { return false;} });
-        if (it != end(probleme))
-            cout <<doctor.idDoctor << " " << it->idProblema << "-Acceptat" << endl;
-        else
-            cout << doctor.idDoctor << " " << it->idProblema << "-Respins" << endl;
-    }*/
-    int counter = 9;
-    while (counter <= 17)
+    while (no_problems > 0)
     {
         for (auto& doctor : doctori)
         {
-            auto it = find_if(begin(probleme), end(probleme), [&](Problema n) {
-                if (doctor.specializare == n.specializare && doctor.ora_disponibil <= counter)
+            auto pacient = find_if(begin(probleme), end(probleme), [&](Problema pacienti) {
+                if (doctor.specializare == pacienti.specializare && doctor.ora_disponibil + pacienti.timp < 17 )
                 {
                     return true;
                 }
@@ -103,26 +70,76 @@ int main()
                 {
                     return false;
                 } });
-                if (it != end(probleme))
+                if (pacient != end(probleme))
                 {
-                    doctor.doctor_probleme.emplace_back(*it);
-                    doctor.ora_disponibil += it->timp;
+
+                    // rezolvarea simpla dar nu foarte interesanta
+                    // doctor.probleme_doctor.emplace_back(*pacient);
+                    /* A doua iteratie, am o eroare aici din cauza doctor.probleme_doctor.begin()
+                    copy_if(probleme.begin(), probleme.end(), doctor.probleme_doctor.begin(), [&pacient](Problema& const copy_pacient)-> bool {
+                        if (copy_pacient.idProblema == pacient->idProblema && copy_pacient.specializare == pacient->specializare)
+                            return true;
+                        return false;
+                        });*/
+                    // varianta finala si interesanta
+                    copy_if(probleme.begin(), probleme.end(), back_inserter(doctor.probleme_doctor), [&pacient](Problema& const copy_pacient)-> bool {
+                        if (copy_pacient.idProblema == pacient->idProblema && copy_pacient.specializare == pacient->specializare)
+                            return true;
+                        return false;
+                        });
+                    doctor.ora_disponibil += pacient->timp;
+                   //probleme.erase(remove(begin(probleme), end(probleme), *pacient), end(probleme)); overloaded ==
+                    probleme.erase(remove_if(begin(probleme), end(probleme), [&pacient](Problema const &pacientul) {
+                        if (pacientul.idProblema == pacient->idProblema && pacientul.specializare == pacient->specializare)
+                            return true;
+                        else
+                            return false;
+                        }), end(probleme));
+
                 }
                     
         }
-        counter++;
+        no_problems--;
     }
+    // output doctori
     for (auto doctor : doctori)
     {
-        cout << doctor.idDoctor << " " << doctor.probleme_rezolvate << " ";
-        for (auto probleme_rezolvate : doctor.doctor_probleme)
+        cout << doctor.idDoctor << " " << doctor.probleme_doctor.size() << " ";
+        for (auto probleme_rezolvate : doctor.probleme_doctor)
         {
             cout << probleme_rezolvate.idProblema << " ";
         }
+        cout << endl;
     }
     return 0;
 }
 
+// problema veche 
+/*
+for (auto problema : probleme)
+{
+    bool accepted = false;
+    for (auto doctor : doctori)
+    {
+        if (problema.specializare == doctor.specializare && doctor.disponibilitate == true)
+        {
+            doctor.disponibilitate = false;
+            accepted = true;
+            break;
+        }
+    }
+    if (accepted)
+    {
+        cout << problema.idProblema << "-Acceptat" << endl;
+
+    }
+    else
+    {
+        cout << problema.idProblema << "-Respins" << endl;
+
+    }
+}*/
+// clasa 2
 /*vector <int> arr = vector<int>{ 1,2,3,4,5,6,7,4,8,9,98 };
     auto it = find(begin(arr), end(arr), 7);
 
